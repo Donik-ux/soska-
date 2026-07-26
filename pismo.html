@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#fdf3ee">
+<title>Письмо для тебя ♡</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Neucha&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:     #d94f4f;
+    --red-dk:  #b93a3a;
+    --pink:    #f2b8c6;
+    --pink-bg: #ffd9e2;
+    --pink-bg2:#ffe9ef;
+    --paper:   #fdf3ee;
+    --ink:     #7a4a52;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body {
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 50% -20%, #ffe4ec 0%, transparent 55%),
+      radial-gradient(130% 90% at 50% 120%, #ffe0e8 0%, transparent 50%),
+      var(--paper);
+    font-family: "Press Start 2P", monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  svg.px { shape-rendering: crispEdges; image-rendering: pixelated; }
+
+  /* ---------- CRT: сканлайны + виньетка ---------- */
+  .crt {
+    position: fixed;
+    inset: 0;
+    z-index: 130;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg,
+        rgba(122, 74, 82, .05) 0px,
+        rgba(122, 74, 82, .05) 1px,
+        transparent 1px,
+        transparent 3px);
+  }
+  .crt::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(115% 115% at 50% 50%, transparent 62%, rgba(150, 60, 80, .16) 100%);
+  }
+
+  /* ---------- параллакс-слои сердечек ---------- */
+  .sky { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+  .layer { position: absolute; inset: -6%; will-change: transform; }
+
+  .bg-heart {
+    position: absolute;
+    color: var(--red);
+    animation: beat steps(2) infinite;
+  }
+  @keyframes beat {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.4); }
+  }
+
+  /* ---------- 3D-наклон ---------- */
+  .persp { perspective: 900px; position: relative; z-index: 2; }
+  .tilt3d {
+    transform-style: preserve-3d;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform .25s ease-out;
+  }
+
+  /* ================= ЭКРАН 1: конверт ================= */
+  .screen-envelope {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 34px;
+    transition: transform .45s ease, opacity .45s ease;
+  }
+  .screen-envelope.away {
+    transform: scale(1.7) rotate(3deg);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .env-box { position: relative; transform: translateZ(40px); }
+
+  .envelope {
+    cursor: pointer;
+    animation: env-wiggle 2.2s ease-in-out infinite;
+    transition: transform .15s ease;
+    filter: drop-shadow(0 14px 0 rgba(217, 79, 79, .18));
+  }
+  @keyframes env-wiggle {
+    0%, 100% { transform: rotate(0deg)   translateY(0); }
+    25%      { transform: rotate(-2.5deg) translateY(-5px); }
+    75%      { transform: rotate(2.5deg)  translateY(-5px); }
+  }
+  .envelope:active { transform: scale(.9); }
+
+  /* пиксельные звёздочки вокруг конверта */
+  .star {
+    position: absolute;
+    color: var(--red);
+    font-size: 14px;
+    opacity: 0;
+    animation: star-blink steps(2) infinite;
+    pointer-events: none;
+    text-shadow: 0 0 6px rgba(255, 120, 150, .8);
+  }
+  @keyframes star-blink {
+    0%, 60%, 100% { opacity: 0; }
+    30%           { opacity: 1; }
+  }
+  .star.s1 { left: -26px; top: 4px;    animation-duration: 1.7s; }
+  .star.s2 { right: -24px; top: 40px;  animation-duration: 2.1s; animation-delay: .5s; }
+  .star.s3 { left: 12px;  top: -26px;  animation-duration: 1.9s; animation-delay: .9s; font-size: 10px; }
+  .star.s4 { right: 6px;  bottom: -22px; animation-duration: 2.3s; animation-delay: .3s; font-size: 11px; }
+
+  .env-caption {
+    font-size: clamp(11px, 3.4vw, 15px);
+    color: var(--ink);
+    text-align: center;
+    line-height: 1.8;
+    animation: caption-blink 1.6s steps(2) infinite;
+    transform: translateZ(30px);
+  }
+  @keyframes caption-blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .55; }
+  }
+
+  .env-hint {
+    font-size: 8px;
+    color: #c99aa4;
+    text-align: center;
+    transform: translateZ(20px);
+  }
+
+  /* ================= ЭКРАН 2/3: пиксельное окно ================= */
+  #perspWin { display: none; }
+  #perspWin.show { display: block; }
+
+  .win {
+    width: min(93vw, 430px);
+    border: 4px solid var(--red);
+    background: #fbe9ec;
+    box-shadow:
+      8px 8px 0 rgba(217, 79, 79, .28),
+      0 26px 50px rgba(150, 60, 80, .18);
+    animation: win-pop .35s steps(5);
+  }
+  @keyframes win-pop {
+    0%   { transform: scale(.2) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+    100% { transform: scale(1)  rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+  }
+
+  .win-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 4px solid var(--red);
+    color: var(--red);
+    font-size: 14px;
+    background: #f6dee3;
+  }
+  .win-title .wx { letter-spacing: 4px; }
+
+  .win-hearts {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 12px 0 10px;
+    background: #f6dee3;
+    border-bottom: 4px solid var(--red);
+  }
+  .win-hearts > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .win-hearts > * { animation: beat 1.6s steps(2) infinite; }
+  .win-hearts > *:nth-child(2) { animation: none; }
+  .win-hearts > *:nth-child(4) { animation: none; }
+  .win-hearts > *:nth-child(3) { animation-delay: .4s; }
+  .win-hearts > *:nth-child(5) { animation-delay: .8s; }
+  .win-hearts .dot {
+    width: 6px; height: 6px;
+    background: var(--red);
+  }
+
+  .win-body {
+    background:
+      conic-gradient(var(--pink-bg) 90deg, var(--pink-bg2) 90deg 180deg, var(--pink-bg) 180deg 270deg, var(--pink-bg2) 270deg);
+    background-size: 14px 14px;
+    padding: 26px 18px 30px;
+    text-align: center;
+  }
+
+  .q-text {
+    font-size: clamp(12px, 3.8vw, 16px);
+    color: #5d3a41;
+    line-height: 1.9;
+    margin-bottom: 18px;
+  }
+
+  .cat-wrap {
+    display: inline-block;
+    position: relative;
+    animation: cat-bob 1.2s steps(2) infinite;
+  }
+  .cat-wrap.party { animation: cat-party .5s steps(2) infinite; }
+  @keyframes cat-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px); }
+  }
+  @keyframes cat-party {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50%      { transform: translateY(-9px) rotate(4deg); }
+  }
+  /* моргание: два кадра котика */
+  .cat-frame2 { display: none; }
+  .blink .cat-frame1 { display: none; }
+  .blink .cat-frame2 { display: block; }
+
+  .yn {
+    display: flex;
+    justify-content: center;
+    gap: 26px;
+    margin-top: 24px;
+  }
+
+  .pxbtn {
+    font-family: "Press Start 2P", monospace;
+    font-size: 14px;
+    color: var(--red);
+    background: #fff7f4;
+    border: 3px solid var(--red);
+    box-shadow: 4px 4px 0 var(--red);
+    padding: 13px 24px;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .pxbtn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 var(--red);
+  }
+  #btnYes { animation: yes-glow 1.2s steps(2) infinite; }
+  @keyframes yes-glow {
+    0%, 100% { background: #fff7f4; }
+    50%      { background: #ffd9e2; box-shadow: 4px 4px 0 var(--red), 0 0 18px rgba(217,79,79,.55); }
+  }
+
+  #btnNo.runaway {
+    position: fixed;
+    left: 0; top: 0;
+    z-index: 60;
+    transition: left .12s steps(3), top .12s steps(3);
+  }
+
+  /* ================= ЭКРАН 3: письмо ================= */
+  .yay {
+    display: none;
+    font-size: clamp(13px, 4.2vw, 17px);
+    color: var(--red);
+    margin-bottom: 14px;
+    animation: caption-blink 1s steps(2) infinite;
+  }
+
+  .letter {
+    display: none;
+    margin-top: 18px;
+    background: #fff4ee;
+    border: 3px solid var(--red);
+    box-shadow: 4px 4px 0 rgba(217,79,79,.35);
+    padding: 18px 16px;
+    text-align: left;
+    max-height: 46vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    font-family: "Neucha", cursive;
+    font-size: 19px;
+    line-height: 1.45;
+    color: #6b4048;
+  }
+  .letter p {
+    margin-bottom: 14px;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: p-in .6s ease forwards;
+  }
+  .letter p:nth-child(1) { animation-delay: .2s; }
+  .letter p:nth-child(2) { animation-delay: .7s; }
+  .letter p:nth-child(3) { animation-delay: 1.2s; }
+  .letter p:nth-child(4) { animation-delay: 1.7s; }
+  .letter p:nth-child(5) { animation-delay: 2.2s; }
+  .letter p:nth-child(6) { animation-delay: 2.7s; }
+  .letter p:nth-child(7) { animation-delay: 3.2s; }
+  @keyframes p-in {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .letter .sign {
+    text-align: right;
+    color: var(--red);
+    font-size: 21px;
+    margin-bottom: 0;
+  }
+
+  .win.opened .q-text,
+  .win.opened .yn      { display: none; }
+  .win.opened .yay     { display: block; }
+  .win.opened .letter  { display: block; animation: win-pop .4s steps(6); }
+  .win.opened .win-title span:first-child::after { content: " ♥"; }
+
+  /* canvas для пиксельных салютов */
+  #fx {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    pointer-events: none;
+  }
+
+  /* пиксельный дождь сердечек */
+  .confetti {
+    position: fixed;
+    top: -30px;
+    color: var(--red);
+    font-family: "Press Start 2P", monospace;
+    z-index: 90;
+    pointer-events: none;
+    animation: fall steps(26) forwards;
+  }
+  @keyframes fall {
+    to { transform: translateY(112vh) rotate(180deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  }
+</style>
+</head>
+<body>
+
+  <canvas id="fx"></canvas>
+  <div class="crt"></div>
+
+  <div class="sky">
+    <div class="layer" data-depth="10" id="layer1"></div>
+    <div class="layer" data-depth="24" id="layer2"></div>
+    <div class="layer" data-depth="44" id="layer3"></div>
+  </div>
+
+  <!-- ЭКРАН 1: конверт -->
+  <div class="persp" id="perspEnv">
+    <div class="screen-envelope tilt3d" id="scrEnv">
+      <div class="env-box">
+        <span class="star s1">✦</span>
+        <span class="star s2">✦</span>
+        <span class="star s3">✦</span>
+        <span class="star s4">✦</span>
+        <div class="envelope" id="envelope"></div>
+      </div>
+      <div class="env-caption">♡ Письмо для тебя!! ♡</div>
+      <div class="env-hint">нажми на конверт · наклони телефон ✦</div>
+    </div>
+  </div>
+
+  <!-- ЭКРАН 2 и 3: окно LOVE -->
+  <div class="persp" id="perspWin">
+    <div class="win tilt3d" id="win">
+      <div class="win-title">
+        <span>LOVE</span>
+        <span class="wx">— ✕</span>
+      </div>
+      <div class="win-hearts" id="winHearts"></div>
+      <div class="win-body">
+        <div class="q-text">Ты любишь меня?</div>
+        <div class="yay">УРАААА!!! ♥</div>
+        <div class="cat-wrap" id="cat">
+          <div class="cat-frame1" id="catF1"></div>
+          <div class="cat-frame2" id="catF2"></div>
+        </div>
+        <div class="yn">
+          <button class="pxbtn" id="btnYes">ДА</button>
+          <button class="pxbtn" id="btnNo">НЕТ</button>
+        </div>
+
+        <div class="letter">
+          <p>Любимая моя,</p>
+          <p>я просто хочу, чтобы ты знала, как сильно и искренне я тебя люблю. Иногда слова кажутся слишком маленькими, чтобы описать то, что творится в моём сердце, но я всё равно попробую — ты заслуживаешь знать, как много ты для меня значишь.</p>
+          <p>Ты не просто человек, которого я люблю. Ты мой дом, мой покой, моё самое безопасное место в этом мире. Когда я думаю о счастье — я думаю о тебе. Когда я думаю об уюте — я думаю о тебе. Когда я думаю о своём будущем — я вижу в нём тебя.</p>
+          <p>Я знаю, что я не идеален. Знаю, что совершал ошибки, и порой обижал тебя, даже когда совсем этого не хотел. За каждый момент, когда я тебя подводил, за каждую слезу, за каждый раз, когда я не понимал тебя так, как должен был, — прости меня. Моё сердце никогда не хотело причинить тебе боль. Я всё ещё учусь любить тебя лучше и становиться тем, кого ты заслуживаешь.</p>
+          <p>Больше всего я дорожу всем, что мы прожили вместе: смехом до боли в животе, глупыми моментами, которые понимаем только мы вдвоём, и тем, как мы держались друг за друга, когда было тяжело.</p>
+          <p>Я люблю тебя. Вчера, сегодня, завтра — всегда.</p>
+          <p class="sign">Твой ♥</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  /* ---------- пиксельный рендер ---------- */
+  var PAL = {
+    'K': '#2e2a33',
+    'W': '#ffffff',
+    'R': '#d94f4f',
+    'r': '#e98484',
+    'P': '#f2b8c6',
+    'p': '#f6889e'
+  };
+
+  function renderPixels(map, scale) {
+    var h = map.length, w = 0, i, x, y;
+    for (i = 0; i < h; i++) if (map[i].length > w) w = map[i].length;
+    var NS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.setAttribute('width', w * scale);
+    svg.setAttribute('height', h * scale);
+    svg.setAttribute('class', 'px');
+    for (y = 0; y < h; y++) {
+      for (x = 0; x < map[y].length; x++) {
+        var c = map[y][x];
+        if (c === '.' || c === ' ') continue;
+        var rect = document.createElementNS(NS, 'rect');
+        rect.setAttribute('x', x);
+        rect.setAttribute('y', y);
+        rect.setAttribute('width', 1.02);
+        rect.setAttribute('height', 1.02);
+        rect.setAttribute('fill', PAL[c] || c);
+        svg.appendChild(rect);
+      }
+    }
+    return svg;
+  }
+
+  var HEART = [
+    '.RR...RR.',
+    'RRRR.RRRR',
+    'RRRRRRRRR',
+    'RRRRRRRRR',
+    '.RRRRRRR.',
+    '..RRRRR..',
+    '...RRR...',
+    '....R....'
+  ];
+
+  function makeEnvelope(w, h) {
+    var map = [], x, y;
+    for (y = 0; y < h; y++) {
+      var row = '';
+      for (x = 0; x < w; x++) {
+        if (x === 0 || y === 0 || x === w - 1 || y === h - 1) { row += 'R'; continue; }
+        var y1 = Math.round((x / (w - 1)) * (h - 1));
+        var y2 = Math.round(((w - 1 - x) / (w - 1)) * (h - 1));
+        row += (y === y1 || y === y2) ? 'P' : 'W';
+      }
+      map.push(row);
+    }
+    var hx = Math.floor((w - 9) / 2), hy = Math.floor((h - 8) / 2);
+    for (y = 0; y < HEART.length; y++) {
+      var chars = map[hy + y].split('');
+      for (x = 0; x < 9; x++) {
+        if (HEART[y][x] === 'R') chars[hx + x] = 'R';
+      }
+      map[hy + y] = chars.join('');
+    }
+    return map;
+  }
+
+  /* котик: кадр 1 — глаза открыты */
+  var CAT1 = [
+    '..KK......KK........',
+    '..KKK....KKK........',
+    '..KPKK..KKPK........',
+    '..KKKKKKKKKK........',
+    '.KKKKKKKKKKKK.......',
+    '.KWWWKKKKWWWK.......',
+    '.KWKWKKKKWKWK.......',
+    '.KWWWKKKKWWWK.......',
+    '.KKKKWKKWKKKK....KK.',
+    '.KKKKKWWKKKKK...KKK.',
+    '.KKKKKKKKKKKK..KKK..',
+    'KKK.RR..RR.KKK.KK...',
+    'KK.RRRRRRRRR.KKKK...',
+    'KK.RRRRRRRRR.KKK....',
+    'KKK.RRRRRRR.KKK.....',
+    '.KK..RRRRR..KK......',
+    '.KKK..RRR..KKK......',
+    '.KKKK..R..KKKK......',
+    '.KKKKKKKKKKKK.......',
+    '.KK..KK..KK.........'
+  ];
+  /* кадр 2 — глаза закрыты (моргает) */
+  var CAT2 = CAT1.slice();
+  CAT2[5] = '.KKKKKKKKKKKK.......';
+  CAT2[6] = '.KWWWKKKKWWWK.......';
+  CAT2[7] = '.KKKKKKKKKKKK.......';
+
+  var scrEnv   = document.getElementById('scrEnv');
+  var perspEnv = document.getElementById('perspEnv');
+  var perspWin = document.getElementById('perspWin');
+  var env      = document.getElementById('envelope');
+  var win      = document.getElementById('win');
+  var winHearts = document.getElementById('winHearts');
+  var catWrap  = document.getElementById('cat');
+  var btnYes   = document.getElementById('btnYes');
+  var btnNo    = document.getElementById('btnNo');
+
+  var envScale = window.innerWidth < 420 ? 9 : 11;
+  env.appendChild(renderPixels(makeEnvelope(26, 18), envScale));
+
+  var catScale = window.innerWidth < 420 ? 7 : 8;
+  document.getElementById('catF1').appendChild(renderPixels(CAT1, catScale));
+  document.getElementById('catF2').appendChild(renderPixels(CAT2, catScale));
+
+  /* котик моргает */
+  setInterval(function () {
+    catWrap.classList.add('blink');
+    setTimeout(function () { catWrap.classList.remove('blink'); }, 160);
+  }, 2600);
+
+  /* сердечки в шапке окна */
+  ['h','d','h','d','h'].forEach(function (t) {
+    if (t === 'h') {
+      var box = document.createElement('span');
+      box.appendChild(renderPixels(HEART, 4));
+      winHearts.appendChild(box);
+    } else {
+      var d = document.createElement('span');
+      d.className = 'dot';
+      winHearts.appendChild(d);
+    }
+  });
+
+  /* ---------- параллакс: 3 слоя сердечек ---------- */
+  var layers = [
+    { el: document.getElementById('layer1'), depth: 10, count: 14, min: 6,  max: 10, op: .3 },
+    { el: document.getElementById('layer2'), depth: 24, count: 12, min: 9,  max: 14, op: .45 },
+    { el: document.getElementById('layer3'), depth: 44, count: 9,  min: 12, max: 19, op: .6 }
+  ];
+
+  layers.forEach(function (l) {
+    for (var i = 0; i < l.count; i++) {
+      var s = document.createElement('span');
+      s.className = 'bg-heart';
+      s.textContent = Math.random() < 0.75 ? '♥' : '♡';
+      s.style.left = (Math.random() * 98 + 1) + '%';
+      s.style.top  = (Math.random() * 96 + 2) + '%';
+      s.style.fontSize = (l.min + Math.random() * (l.max - l.min)) + 'px';
+      s.style.opacity = l.op * (0.6 + Math.random() * 0.4);
+      s.style.animationDuration = (1.4 + Math.random() * 2.4) + 's';
+      s.style.animationDelay = (-Math.random() * 2) + 's';
+      l.el.appendChild(s);
+    }
+  });
+
+  /* вход: гироскоп или мышь/палец */
+  var tx = 0, ty = 0, cx = 0, cy = 0;
+  function tick() {
+    cx += (tx - cx) * 0.08;
+    cy += (ty - cy) * 0.08;
+    layers.forEach(function (l) {
+      l.el.style.transform = 'translate3d(' + (-cx * l.depth) + 'px,' + (-cy * l.depth) + 'px,0)';
+    });
+    scrEnv.style.setProperty('--ry', (cx * 9) + 'deg');
+    scrEnv.style.setProperty('--rx', (-cy * 9) + 'deg');
+    win.style.setProperty('--ry', (cx * 7) + 'deg');
+    win.style.setProperty('--rx', (-cy * 7) + 'deg');
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  window.addEventListener('deviceorientation', function (e) {
+    if (e.gamma === null) return;
+    tx = Math.max(-1, Math.min(1, e.gamma / 26));
+    ty = Math.max(-1, Math.min(1, (e.beta - 45) / 30));
+  });
+
+  var asked = false;
+  document.addEventListener('touchend', function () {
+    if (asked) return;
+    asked = true;
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().catch(function () {});
+    }
+  });
+
+  document.addEventListener('pointermove', function (e) {
+    tx = (e.clientX / window.innerWidth  - 0.5) * 2;
+    ty = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  /* ---------- canvas: пиксельные салюты ---------- */
+  var cv = document.getElementById('fx');
+  var ctx = cv.getContext('2d');
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resize() {
+    cv.width  = window.innerWidth * dpr;
+    cv.height = window.innerHeight * dpr;
+    cv.style.width  = window.innerWidth + 'px';
+    cv.style.height = window.innerHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  var parts = [];
+  var colors = ['#d94f4f', '#f6889e', '#f2b8c6', '#ffffff', '#e98484'];
+
+  function pixelBurst(x, y, power) {
+    power = power || 1;
+    var n = Math.round(34 * power);
+    for (var i = 0; i < n; i++) {
+      var a = Math.random() * Math.PI * 2;
+      var sp = 1.5 + Math.random() * 6.5;
+      parts.push({
+        x: x, y: y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 1.5,
+        g: 0.14,
+        size: 3 + Math.floor(Math.random() * 3) * 2,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 1,
+        decay: 0.012 + Math.random() * 0.014
+      });
+    }
+  }
+
+  var GRID = 3; /* привязка к сетке — движение получается «пиксельным» */
+  function frame() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    for (var i = parts.length - 1; i >= 0; i--) {
+      var p = parts[i];
+      p.vy += p.g;
+      p.vx *= 0.985; p.vy *= 0.985;
+      p.x += p.vx;  p.y += p.vy;
+      p.life -= p.decay;
+      if (p.life <= 0 || p.y > window.innerHeight + 20) { parts.splice(i, 1); continue; }
+      ctx.globalAlpha = p.life > 0.35 ? 1 : p.life / 0.35;
+      ctx.fillStyle = p.color;
+      var gx = Math.round(p.x / GRID) * GRID;
+      var gy = Math.round(p.y / GRID) * GRID;
+      ctx.fillRect(gx, gy, p.size, p.size);
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  /* ---------- экран 1 → экран 2 ---------- */
+  env.addEventListener('click', function () {
+    if (navigator.vibrate) navigator.vibrate(25);
+    var r = env.getBoundingClientRect();
+    pixelBurst(r.left + r.width / 2, r.top + r.height / 2, 1.6);
+    scrEnv.classList.add('away');
+    setTimeout(function () {
+      perspEnv.style.display = 'none';
+      perspWin.classList.add('show');
+    }, 430);
+  });
+
+  /* ---------- кнопка НЕТ убегает ---------- */
+  var escaped = 0;
+  var teases = ['НЕТ', 'НЕ-А', 'НИЗЯ', 'НЕ ВЫЙДЕТ', 'ТОЛЬКО ДА'];
+
+  function moveNo() {
+    if (!escaped) {
+      var r = btnNo.getBoundingClientRect();
+      btnNo.classList.add('runaway');
+      document.body.appendChild(btnNo);
+      btnNo.style.left = r.left + 'px';
+      btnNo.style.top  = r.top + 'px';
+    }
+    escaped++;
+    btnNo.textContent = teases[Math.min(escaped, teases.length - 1)];
+
+    var pad = 12;
+    var maxX = window.innerWidth  - btnNo.offsetWidth  - pad;
+    var maxY = window.innerHeight - btnNo.offsetHeight - pad;
+    var cur = btnNo.getBoundingClientRect();
+    var x, y, tries = 0;
+    do {
+      x = pad + Math.random() * (maxX - pad);
+      y = pad + Math.random() * (maxY - pad);
+      tries++;
+    } while (Math.hypot(x - cur.left, y - cur.top) < 140 && tries < 30);
+
+    btnNo.style.left = x + 'px';
+    btnNo.style.top  = y + 'px';
+    if (navigator.vibrate) navigator.vibrate(12);
+  }
+
+  btnNo.addEventListener('touchstart', function (e) { e.preventDefault(); moveNo(); }, { passive: false });
+  btnNo.addEventListener('pointerdown', function (e) { e.preventDefault(); moveNo(); });
+  btnNo.addEventListener('click', function (e) { e.preventDefault(); moveNo(); });
+  document.addEventListener('mousemove', function (e) {
+    var r = btnNo.getBoundingClientRect();
+    if (Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)) < 80) moveNo();
+  });
+
+  /* ---------- ДА → письмо ---------- */
+  btnYes.addEventListener('click', function () {
+    if (navigator.vibrate) navigator.vibrate([30, 40, 90]);
+    btnNo.style.display = 'none';
+    win.classList.add('opened');
+    catWrap.classList.add('party');
+
+    /* серия пиксельных салютов */
+    var w = window.innerWidth, h = window.innerHeight;
+    pixelBurst(w / 2, h * 0.35, 2);
+    var shots = 0;
+    var t = setInterval(function () {
+      pixelBurst(w * (0.15 + Math.random() * 0.7), h * (0.15 + Math.random() * 0.5), 1.2);
+      if (++shots > 5) clearInterval(t);
+    }, 320);
+
+    rain();
+  });
+
+  /* пиксельный дождь сердечек */
+  function rain() {
+    var count = 0;
+    var t = setInterval(function () {
+      var c = document.createElement('div');
+      c.className = 'confetti';
+      c.textContent = '♥';
+      c.style.left = (Math.random() * 100) + 'vw';
+      c.style.fontSize = (10 + Math.random() * 16) + 'px';
+      c.style.animationDuration = (2 + Math.random() * 2.5) + 's';
+      c.style.color = Math.random() < 0.3 ? '#f6889e' : '#d94f4f';
+      document.body.appendChild(c);
+      setTimeout(function () { c.remove(); }, 5000);
+      if (++count > 80) clearInterval(t);
+    }, 70);
+  }
+
+  /* тап по фону после открытия письма — маленький салютик */
+  document.body.addEventListener('pointerdown', function (e) {
+    if (!win.classList.contains('opened')) return;
+    if (e.target.closest('.win')) return;
+    pixelBurst(e.clientX, e.clientY, 0.7);
+  });
+})();
+</script>
+</body>
+</html>
